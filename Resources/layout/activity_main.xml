@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/app_background">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:paddingStart="20dp" android:paddingEnd="20dp"
+        android:paddingTop="20dp" android:paddingBottom="16dp" android:background="@color/header_background">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="NFC Lens" android:textSize="26sp" android:textStyle="bold" android:textColor="@color/text_on_header" />
+        <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingTop="6dp" android:accessibilityLiveRegion="polite"
+            android:text="Tap Scan, then hold a card against the phone." android:textColor="@color/text_on_header_muted" android:textSize="14sp" />
+        <ProgressBar android:id="@+id/progress" style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="10dp"
+            android:indeterminate="true" android:indeterminateTint="@color/accent" android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Primary action -->
+    <Button android:id="@+id/scan" android:layout_width="match_parent" android:layout_height="60dp"
+        android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginTop="16dp"
+        android:text="Scan card" android:textSize="17sp" android:textStyle="bold" android:textAllCaps="false"
+        android:backgroundTint="@color/accent" android:textColor="@color/accent_text" android:stateListAnimator="@null" />
+
+    <!-- Secondary controls -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:paddingStart="16dp" android:paddingEnd="16dp"
+        android:gravity="center_vertical" android:layout_marginTop="4dp">
+        <Spinner android:id="@+id/scan_mode" android:layout_width="0dp" android:layout_height="48dp"
+            android:layout_weight="1" android:contentDescription="Scan mode" />
+        <CheckBox android:id="@+id/reveal" android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="Reveal" android:textColor="@color/text_primary" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="2dp">
+        <Button android:id="@+id/demo" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Demo" android:textSize="13sp" android:textAllCaps="false" />
+        <Button android:id="@+id/export" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Export" android:textSize="13sp" android:textAllCaps="false" />
+    </LinearLayout>
+
+    <!-- Content: card view or live log -->
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:paddingTop="8dp">
+        <ScrollView android:id="@+id/card_page" android:layout_width="match_parent" android:layout_height="match_parent">
+            <LinearLayout android:id="@+id/tile_container" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="16dp" />
+        </ScrollView>
+        <ScrollView android:id="@+id/log_page" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:visibility="gone" android:background="@color/log_background">
+            <TextView android:id="@+id/live_log" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:padding="16dp" android:fontFamily="monospace" android:textSize="12sp"
+                android:textColor="@color/log_text" android:textIsSelectable="true" />
+        </ScrollView>
+    </FrameLayout>
+
+    <!-- Bottom bar -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:background="@color/bottom_bar" android:padding="8dp" android:elevation="8dp">
+        <Button android:id="@+id/card_tab" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Card" android:textAllCaps="false" android:background="?android:attr/selectableItemBackground" />
+        <Button android:id="@+id/log_tab" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Log" android:textAllCaps="false" android:background="?android:attr/selectableItemBackground" />
+        <Button android:id="@+id/classic_key" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Key" android:textAllCaps="false" android:background="?android:attr/selectableItemBackground" />
+    </LinearLayout>
+</LinearLayout>

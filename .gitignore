@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+*.keystore
+*.jks
+**/.toolchain/
+**/self-test-result.txt
+NFC-Lens-report*.txt
+apk/

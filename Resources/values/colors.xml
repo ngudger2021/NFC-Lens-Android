@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="app_background">#EEF2F7</color>
+    <color name="header_background">#0F172A</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_on_header">#FFFFFF</color>
+    <color name="text_on_header_muted">#94A3B8</color>
+    <color name="text_hidden">#94A3B8</color>
+    <color name="accent">#2563EB</color>
+    <color name="accent_text">#FFFFFF</color>
+    <color name="tab_selected">#1D4ED8</color>
+    <color name="tab_idle">#475569</color>
+    <color name="log_background">#0F172A</color>
+    <color name="log_text">#CBD5E1</color>
+    <color name="face_start">#1E3A8A</color>
+    <color name="face_end">#4F46E5</color>
+    <color name="face_text">#FFFFFF</color>
+    <color name="face_text_muted">#C7D2FE</color>
+    <color name="bottom_bar">#FFFFFF</color>
+</resources>

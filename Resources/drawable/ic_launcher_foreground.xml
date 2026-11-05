@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Payment card with chip and contactless waves, within the 66dp adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,37 h40 a4,4 0 0 1 4,4 v28 a4,4 0 0 1 -4,4 h-40 a4,4 0 0 1 -4,-4 v-28 a4,4 0 0 1 4,-4 z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M36,47 h10 v10 h-10 z" />
+    <path
+        android:strokeColor="#2563EB"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M58,53 A4,4 0 0 1 58,61" />
+    <path
+        android:strokeColor="#2563EB"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M62,50 A6,6 0 0 1 62,62" />
+    <path
+        android:strokeColor="#2563EB"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M66,47 A8,8 0 0 1 66,63" />
+</vector>
