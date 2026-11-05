@@ -1,83 +1,233 @@
 # NFC Lens for Android
 
-Native .NET 10 Android app using the phone's built-in NFC reader. This is a separate UI over the same EMV scanner, TLV decoder, NDEF decoder and learning content used by the Windows app. Android 8.0 (API 26) or later is required.
+Read the contactless (NFC) payment cards and tags your phone can see, and explain what each field means. NFC Lens shows a card-style summary of a payment card, lets you flip it to see the dates and application details, and lists every EMV field with a plain-English explanation.
 
-## Current build status
+It's an inspection tool, not a payment app. It never authorises a payment, never writes to a card, and never sends data anywhere. The app requests no Internet permission.
 
-A standalone debug APK has been built successfully and its APK v2/v3 signatures verified. The convenient installation copy is `apk/NFC-Lens-Android.apk`; the original is under `bin/Debug/net10.0-android/`. Shared core tests and Windows builds also pass. Physical phone behaviour has not yet been device-tested.
+This guide covers building the APK from source, signing a release build, and sharing it. The APK is too large to attach to a GitHub release, so share it through a cloud link instead (see [Publishing a release](#publishing-a-release)).
 
-## Build an installable APK
+## Requirements
 
-### Visual Studio installation
+- Windows with PowerShell.
+- The **.NET 10 SDK**.
+- Android 8.0 (API 26) or later on the phone, with NFC.
+- An Internet connection for the first build, which downloads the Android SDK and a JDK.
 
-Installing `dotnet workload install android` alone does not add Visual Studio's Android project tooling or install the Java/Android SDKs. In **Visual Studio Installer → Modify**, select **.NET Multi-platform App UI development** and ensure **Android SDK setup** and **OpenJDK (Microsoft distribution)** are selected. Alternatively, import `.vsconfig` from the Installer's **More → Import configuration** action. Close Visual Studio before installation, then reopen `NfcLens.Android.sln` afterward.
+## 1. Get the source
 
-If the Error List shows missing `Android`, `Java`, `Activity` and `Resource` types alongside `NETSDK1147`, resolve workload/project loading first. Those messages can cascade from missing Android references. A fresh command-line build is the best way to identify the first active error. `XA5300` specifically means the Android SDK is missing or its directory is undiscovered; use the helper below to install it or provide its path.
-
-Install the .NET 10 SDK and Android workload, either with Visual Studio's Android/.NET tooling or:
+Clone with the shared core, which is a git submodule:
 
 ```powershell
-dotnet workload install android
+git clone --recurse-submodules https://github.com/ngudger2021/NFC-Lens-Android.git
+cd NFC-Lens-Android
 ```
 
-Install the Android SDK and JDK 21. Microsoft's dependency target can provision compatible components into absolute paths of your choice:
+If you cloned without `--recurse-submodules`, run this from the repository folder:
 
-The simplest route from the repository root is:
+```powershell
+git submodule update --init --recursive
+```
+
+## 2. Install the Android SDK and JDK
+
+The first time, let the build script download the Android SDK and a JDK into `.toolchain\`. It accepts the Android SDK licences automatically:
 
 ```powershell
 .\build.ps1 -InstallDependencies
 ```
 
-This installs missing components under `.toolchain/` unless existing SDK/JDK environment paths are available, accepts the Android SDK licences and builds a standalone debug APK. Internet access is required for downloads. It prints the signed APK path on success. For an existing custom installation:
+This needs several gigabytes of free disk space. Later builds don't need the flag.
+
+If you already have the Android SDK and a JDK 21, point the script at them instead:
 
 ```powershell
-.\build.ps1 -AndroidSdkDirectory 'C:/your/android-sdk' -JavaSdkDirectory 'C:/your/jdk-21'
+.\build.ps1 -AndroidSdkDirectory 'C:\path\to\android-sdk' -JavaSdkDirectory 'C:\path\to\jdk-21'
 ```
 
-Equivalent manual commands:
+## 3. Build a debug APK (for your own phone)
 
 ```powershell
-dotnet build NfcLens.Android.csproj -t:InstallAndroidDependencies -p:AndroidSdkDirectory=C:/Android/sdk -p:JavaSdkDirectory=C:/Android/jdk -p:AcceptAndroidSdkLicenses=True
-dotnet build NfcLens.Android.csproj -c Debug -p:EmbedAssembliesIntoApk=True -p:AndroidSdkDirectory=C:/Android/sdk -p:JavaSdkDirectory=C:/Android/jdk
+.\build.ps1
 ```
 
-The installable debug package is `bin/Debug/net10.0-android/app.nfclens.mobile-Signed.apk`. If Android tooling inserts an API version into that output directory, find it with `Get-ChildItem bin -Recurse -Filter '*-Signed.apk'`. A debug APK is for local testing, not a production release. Keep a stable, private signing key for future distribution.
+The script prints the APK path when it finishes:
 
-With a connected phone and USB debugging enabled:
+```
+bin\Debug\net10.0-android\app.nfclens.mobile-Signed.apk
+```
+
+A debug APK is signed with Android's debug key. It's for testing on your own phones only, and it can't be used to update a release build.
+
+## 4. Build a signed release APK
+
+A release APK must be signed with your own private key. The build script doesn't do release builds, so use `dotnet build` directly.
+
+### 4a. Create a signing key (once)
+
+Create the key outside the repository, for example in a `Keys` folder in your Documents. The `keytool` that comes with the JDK can do it. If you used `.toolchain`, it's at `.toolchain\jdk\bin\keytool.exe`:
 
 ```powershell
-adb install -r bin/Debug/net10.0-android/app.nfclens.mobile-Signed.apk
+keytool -genkeypair -v -keystore C:\Users\nick\Documents\Keys\nfclens-release.keystore -alias nfclens -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Open `NfcLens.Android.sln` here in Visual Studio, or this folder in VS Code. The layout is editable in `Resources/layout/activity_main.xml`; logic is in `MainActivity.cs`, and NFC adapters are in `PhoneScanner.cs`. The Windows solution remains independent so its builds do not require Android tooling.
+`keytool` asks for a keystore password, a key password and some name details. Write the passwords down and keep them somewhere safe.
 
-## Use
+> **Keep this key safe.** Anyone with the keystore and its passwords can sign apps as you. If you lose it, you can't publish updates that existing installs will accept, and users will have to uninstall first. Back it up somewhere private. Never copy it into the repository. The `.gitignore` excludes `*.keystore` and `*.jks`, but check `git status` before each commit.
 
-Version 1.0.1 enables reader mode when **Scan** is pressed, avoiding the earlier case where a card presented before Scan could be detected and ignored. **EMV only** polls NFC-A/B with Android's NDEF precheck disabled; Auto retains NDEF discovery for ordinary tags. If a payment card fails, try EMV only, remove the card, press Scan and present it again. Live log now distinguishes tag discovery, ISO-DEP connection, APDU exchange failure and missing ISO-DEP. This is a compatibility change, not confirmation of a particular phone/card failure cause; device testing is still required.
+### 4b. Build and sign
 
-1. Enable NFC on the phone, open the app and tap **Scan**.
-2. Hold the card still against the phone's NFC antenna. Tap **Stop** to cancel. Scans stop when the app leaves the foreground.
-3. Use **Auto (EMV first)** or **EMV only**. The EMV-only path sends no Classic or reader-specific `FF` commands over ISO-DEP.
-4. View **Details**, **Live log**, or enable **Learning mode**. Choose a lesson in the history; decoded EMV fields also get lessons.
-5. **Demo** works without NFC hardware. It uses only fictional data.
-6. **Reveal data** controls card values, response bodies and exported reports. **Export** asks Android's file picker where to save the current report; the app does not upload it. Scan data and Classic settings stay in memory and clear when the process exits. The app requests no Internet permission.
-
-## Supported phone paths
-
-- Contactless EMV uses Android `IsoDep` and the original EMV APDU scanner.
-- Standard NDEF tags use Android's `Ndef` API and the shared Text/URI decoder. Android performs the underlying tag exchanges; these events are explicitly labelled as platform reads rather than a raw RF capture. Type 4 tags on ISO-DEP can use the shared NDEF file reader after EMV discovery.
-- MIFARE Classic uses Android's optional `MifareClassic` API with a selected known Key A or B. The default is `FFFFFFFFFFFF`, Key A. Failed sectors are reported and trailers are skipped. Phone hardware support is required; not every NFC phone supports Classic.
-- Contact-only chip cards, USB PC/SC readers such as ACR122U, DESFire authentication, card writing, and full payment-terminal processing are not included.
-
-The phone sees the card's **contactless** application, so it may return different fields from a contact chip reader.
-
-## Verification
+Store the passwords in environment variables for the current PowerShell session, so they don't end up in your command history as literal text:
 
 ```powershell
-dotnet run --project CoreTests/NfcLens.Core.Tests.csproj
-dotnet build NfcLens.sln
+$env:NFCLENS_KEYSTORE_PASSWORD = 'your-keystore-password'
+$env:NFCLENS_KEY_PASSWORD = 'your-key-password'
+
+dotnet build NfcLens.Android.csproj -c Release `
+  -p:AndroidSdkDirectory="C:\path\to\android-sdk" `
+  -p:JavaSdkDirectory="C:\path\to\jdk-21" `
+  -p:AndroidKeyStore=true `
+  -p:AndroidSigningKeyStore="C:\Users\nick\Documents\Keys\nfclens-release.keystore" `
+  -p:AndroidSigningKeyAlias=nfclens `
+  -p:AndroidSigningKeyPass=$env:NFCLENS_KEY_PASSWORD `
+  -p:AndroidSigningStorePass=$env:NFCLENS_KEYSTORE_PASSWORD
+
+Remove-Item Env:NFCLENS_KEYSTORE_PASSWORD, Env:NFCLENS_KEY_PASSWORD
 ```
 
-These verify the portable protocol core and Windows regression path; they do not validate Android bindings, UI or radio behaviour. Before using real card data, build/install the APK and check Demo, masking, learning, export, foreground/background cancellation and tag removal. Then test an owned EMV card and supported NDEF/Classic tags. Do not commit real scan logs or signing keys.
+If `.\build.ps1` already found your SDK and JDK, use the same paths here. The SDK is usually at `.toolchain\android-sdk`, and the JDK at `.toolchain\jdk`.
 
-References: [Android reader mode](https://developer.android.com/reference/nfc/NfcAdapter), [Android Classic support](https://learn.microsoft.com/en-us/dotnet/api/android.nfc.tech.mifareclassic), [Microsoft Android dependencies](https://learn.microsoft.com/en-us/dotnet/getting-started/installation/dependencies).
+The signed release APK is at:
+
+```
+bin\Release\net10.0-android\app.nfclens.mobile-Signed.apk
+```
+
+It's currently about 49 MB.
+
+### 4c. Check the signature
+
+Use `apksigner` from the Android build tools. Replace `36.0.0` with the version folder you have:
+
+```powershell
+& 'C:\path\to\android-sdk\build-tools\36.0.0\apksigner.bat' verify --verbose 'bin\Release\net10.0-android\app.nfclens.mobile-Signed.apk'
+```
+
+The output should end with `Verifies` and show `Verified using v2 scheme (APK Signature Scheme v2): true`. The warnings about restricted methods from Java are harmless.
+
+## 5. Bump the version
+
+Before each release, edit `NfcLens.Android.csproj`:
+
+- `ApplicationDisplayVersion` is the version shown to people, such as `1.0.2`.
+- `ApplicationVersion` is a whole number that must go up by at least one each release, such as `3`. Android uses it to decide whether an update is newer.
+
+Commit the change before you build the release.
+
+## Publishing a release
+
+### 1. Tag the commit
+
+```powershell
+git tag -a v1.0.2 -m "NFC Lens Android 1.0.2"
+git push origin v1.0.2
+```
+
+Use the same version as `ApplicationDisplayVersion`.
+
+### 2. Get a checksum
+
+People can use this to confirm the file they downloaded is the one you built:
+
+```powershell
+Get-FileHash 'bin\Release\net10.0-android\app.nfclens.mobile-Signed.apk' -Algorithm SHA256
+```
+
+### 3. Upload the APK to cloud storage
+
+GitHub doesn't accept release files over 25 MB, so host the APK elsewhere:
+
+1. Upload the APK to Google Drive, OneDrive or Dropbox.
+2. Set the link to **anyone with the link can view**.
+3. Copy the link.
+
+### 4. Create the GitHub release
+
+1. Open `https://github.com/ngudger2021/NFC-Lens-Android/releases/new`.
+2. Choose the tag you pushed (`v1.0.2`).
+3. Enter a title such as `NFC Lens Android 1.0.2`.
+4. In the description, add:
+   - the download link from step 3,
+   - the SHA-256 checksum from step 2,
+   - what changed in this version.
+5. Click **Publish release**.
+
+Don't attach the APK to the release. The page will show the cloud link instead.
+
+## Installing on a phone
+
+### With a cable (recommended for testing)
+
+1. On the phone, turn on **Developer options** and **USB debugging**. (Settings → About phone → tap *Build number* seven times.)
+2. Connect the phone by USB and accept the debugging prompt on the phone.
+3. Install the APK:
+
+```powershell
+adb install -r 'bin\Release\net10.0-android\app.nfclens.mobile-Signed.apk'
+```
+
+`adb` is in `.toolchain\android-sdk\platform-tools\`.
+
+### From a download link
+
+1. Open the link on the phone and download the APK.
+2. Open the file. Android asks you to allow installs from that app. Allow it, then tap **Install**.
+
+If an older version signed with a *different* key is installed, Android refuses the update. Uninstall NFC Lens first, then install again. Updates signed with the same key install over the top and keep the app's data.
+
+## Using the app
+
+1. Tap **Demo** to see fictional card data, which needs no NFC hardware.
+2. Enable NFC in Android settings.
+3. Tap **Scan card**, then hold a card still against the back of the phone until the read finishes. A short vibration means the read succeeded.
+4. Tap the card picture to flip it and see the back.
+5. Tap any field to see what its tag means.
+
+- **Scan mode:** **Auto (EMV first)** is the default. If a payment card fails, switch to **EMV only**, remove the card, press Scan and present it again.
+- **Reveal:** shows card numbers, names, expiry dates and other sensitive values. They stay hidden until you turn it on.
+- **Export:** saves a text report through Android's file picker. Nothing is uploaded.
+- **Log:** the live command log. Response bodies are hidden unless Reveal is on.
+- **Key:** enter a six-byte key for MIFARE Classic tags. The default is the factory key `FFFFFFFFFFFF`.
+
+Scan results stay in memory and are cleared when the app closes.
+
+## Troubleshooting
+
+- **The build can't find the Android SDK:** run `.\build.ps1 -InstallDependencies`, or pass `-AndroidSdkDirectory` and `-JavaSdkDirectory` as in step 2.
+- **Signing errors on a release build:** check that the keystore path is right, that the alias is `nfclens`, and that both passwords match what you set in `keytool`.
+- **`INSTALL_FAILED_UPDATE_INCOMPATIBLE`:** the installed version was signed with a different key. Uninstall NFC Lens, then install again.
+- **`adb` is not recognised:** use `.toolchain\android-sdk\platform-tools\adb.exe`.
+- **The card doesn't read:** try **EMV only** mode, keep the card still, and check that NFC is on. The **Log** tab shows where a read stopped.
+
+## Updating the shared core
+
+The protocol code is in its own repository, linked here as the `Core` folder. To update to its latest version:
+
+```powershell
+cd Core
+git pull origin main
+cd ..
+git add Core
+git commit -m "Update Core"
+```
+
+## Safety notes
+
+- Use only cards you are authorised to inspect.
+- Don't commit scan logs, exported reports or signing keys. Check `git status` before each commit.
+- Use the fictional Demo data for screenshots and sharing.
+
+## References
+
+- [Android NFC reader mode](https://developer.android.com/reference/android/nfc/NfcAdapter)
+- [Android MIFARE Classic support](https://developer.android.com/reference/android/nfc/tech/MifareClassic)
+- [EMV specifications](https://www.emvco.com/emv-technologies/)
