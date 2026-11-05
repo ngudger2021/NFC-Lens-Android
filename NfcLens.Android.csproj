@@ -23,6 +23,8 @@
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Core is built as its own project; stop the default pattern compiling its files a second time. -->
+    <Compile Remove="Core/**/*.cs" />
     <ProjectReference Include="Core/NfcLens.Core.csproj" />
   </ItemGroup>
 </Project>
